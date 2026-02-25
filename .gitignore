@@ -1,0 +1,43 @@
+# -----------------------
+# Google OAuth files
+# -----------------------
+credentials.json
+token.json
+*.json
+
+
+# -----------------------
+# Python cache / artifacts
+# -----------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# -----------------------
+# OS-specific junk
+# -----------------------
+.DS_Store
+
+# -----------------------
+# Data products
+# -----------------------
+*.fits
+*.fit
+*.csv
+*.txt
+
+# -----------------------
+# Plots and figures
+# -----------------------
+*.png
+*.pdf
+
+# -----------------------
+# Local configuration / credentials
+# -----------------------
+.venv/
+venv/
+env/
+.env
+config.*
