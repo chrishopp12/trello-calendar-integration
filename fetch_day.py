@@ -16,6 +16,7 @@ Environment variables:
   TRELLO_KEY       - Trello API key
   TRELLO_TOKEN     - Trello API token
   TRELLO_LIST_ID   - Trello list id (destination)
+  TRELLO_LABEL_ID  - Trello label id (optional)
 Optional:
   GOOGLE_CREDENTIALS_FILE (default: credentials.json)
   GOOGLE_TOKEN_FILE       (default: token.json)
@@ -47,6 +48,7 @@ class Config:
     calendar_id: str
     credentials_file: str
     token_file: str
+    trello_label_id: str | None = None
 
 
 def parse_args() -> argparse.Namespace:
@@ -72,6 +74,15 @@ def get_day_bounds(date_str: str, local_tz: dt.tzinfo) -> tuple[dt.datetime, dt.
     end_local = start_local + dt.timedelta(days=1)
     pretty = day.isoformat()
     return start_local, end_local, pretty
+
+def get_event_due(ev: dict) -> str | None:
+    """Return an RFC3339 timestamp to use as the Trello due date.
+
+    Google events can be timed (start.dateTime) or all-day (start.date).
+    For timed events we use start.dateTime; for all-day events we return None.
+    """
+    start = ev.get("start", {})
+    return start.get("dateTime")
 
 
 def google_calendar_service(credentials_file: str, token_file: str):
@@ -135,6 +146,8 @@ def trello_create_card(
     list_id: str,
     name: str,
     desc: str,
+    due: str | None = None,
+    label_id: str | None = None,
 ) -> None:
     url = "https://api.trello.com/1/cards"
     params = {
@@ -144,6 +157,12 @@ def trello_create_card(
         "name": name,
         "desc": desc,
     }
+
+    if due:
+        params["due"] = due
+    if label_id:
+        params["idLabels"] = label_id
+
     r = requests.post(url, params=params, timeout=30)
     if r.status_code >= 400:
         raise RuntimeError(f"Trello create card failed ({r.status_code}): {r.text}")
@@ -177,6 +196,7 @@ def load_config(args: argparse.Namespace) -> Config:
     trello_key = os.environ.get("TRELLO_KEY", "").strip()
     trello_token = os.environ.get("TRELLO_TOKEN", "").strip()
     trello_list_id = os.environ.get("TRELLO_LIST_ID", "").strip()
+    trello_label_id = os.environ.get("TRELLO_CALENDAR_LABEL_ID", "").strip()
     if not trello_key or not trello_token or not trello_list_id:
         raise RuntimeError(
             "Missing Trello env vars. Set TRELLO_KEY, TRELLO_TOKEN, and TRELLO_LIST_ID."
@@ -189,6 +209,7 @@ def load_config(args: argparse.Namespace) -> Config:
         trello_key=trello_key,
         trello_token=trello_token,
         trello_list_id=trello_list_id,
+        trello_label_id=trello_label_id or None,
         calendar_id=args.calendar_id,
         credentials_file=credentials_file,
         token_file=token_file,
@@ -212,12 +233,15 @@ def main() -> int:
     created = 0
     for ev in events:
         name, desc = format_event_for_trello(ev)
+        due = get_event_due(ev)
         trello_create_card(
             trello_key=cfg.trello_key,
             trello_token=cfg.trello_token,
             list_id=cfg.trello_list_id,
             name=name,
             desc=desc,
+            due=due,
+            label_id=cfg.trello_label_id,
         )
         created += 1
         print(f"Created card: {name}")

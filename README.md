@@ -12,6 +12,7 @@ On-demand script that:
 - Populate other cards based on event information (if event type A, add cards B and C).
 - Maybe two-way sync that allows the Trello board to populate events in the calendar?
 - General personal orchestrator that calls more general fetch and populate scripts.
+- Get rid of env vars for card parameters and build into orchestrator.
 
 
 
@@ -30,6 +31,7 @@ Download credentials JSON and save as:
 
 Optional:
 
+    export TRELLO_LABEL_ID=...
     export GOOGLE_CREDENTIALS_FILE=credentials.json
     export GOOGLE_TOKEN_FILE=token.json
 
